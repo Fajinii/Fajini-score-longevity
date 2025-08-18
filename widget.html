@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Score de longévité – Widget</title>
+  <style>
+    :root{
+      --bg: transparent;
+      --card: rgba(255,255,255,0.9);
+      --text: #0f172a;
+      --muted: #475569;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --accent: #6366f1;
+      --shadow: 0 10px 25px rgba(0,0,0,.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root{
+        --card: rgba(15,23,42,0.85);
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --shadow: 0 10px 25px rgba(0,0,0,.35);
+      }
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
+      background: var(--bg); color: var(--text);
+      display:grid; place-items:center;
+    }
+    .card{box-shadow: var(--shadow); border-radius: 18px; padding: 18px 20px; width:min(680px, 94vw); background: var(--card);}
+    .header{display:flex; align-items:center; gap:10px; margin-bottom:14px}
+    .dot{width:10px; height:10px; border-radius:999px; background:var(--accent)}
+    .title{font-weight:700; letter-spacing:.2px}
+    .subtitle{font-size:12px; color:var(--muted)}
+
+    /* jauge circulaire */
+    .gauge{width:200px; height:200px; position:relative; margin-bottom:20px}
+    .gauge svg{transform:rotate(-90deg)}
+    .gauge .value{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:28px; color:var(--text)}
+    .gauge .value span{font-size:18px; margin-left:2px;}
+
+    /* barre horizontale */
+    .bar-wrap{position:relative; width:100%; height:18px; background:linear-gradient(90deg, rgba(239,68,68,.18), rgba(245,158,11,.18) 50%, rgba(16,185,129,.18)); border-radius:999px; overflow:hidden; margin-top:10px}
+    .bar{position:absolute; inset:0; width:0%; background:linear-gradient(90deg, var(--bad), var(--warn) 50%, var(--ok));}
+    .bar::after{content:""; position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+    .bar-labels{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px}
+
+    .kpis{display:flex; gap:18px; flex-wrap:wrap; margin-top:12px}
+    .kpi{min-width:120px; padding:10px 12px; border-radius:12px; background:rgba(99,102,241,.08)}
+    .kpi .k{font-size:11px; color:var(--muted); margin-bottom:4px}
+    .kpi .v{font-weight:700}
+
+    .footer{display:flex; justify-content:space-between; align-items:center; margin-top:14px}
+    .badge{font-size:11px; padding:6px 10px; border-radius:999px; background:rgba(99,102,241,.12)}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="dot"></div>
+      <div>
+        <div class="title">Score de longévité</div>
+        <div class="subtitle">Personnalisé</div>
+      </div>
+    </div>
+
+    <!-- jauge circulaire -->
+    <div class="gauge">
+      <svg width="200" height="200" viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="grad">
+            <stop offset="0%" stop-color="var(--bad)" />
+            <stop offset="50%" stop-color="var(--warn)" />
+            <stop offset="100%" stop-color="var(--ok)" />
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r="52" stroke="rgba(148,163,184,.35)" stroke-width="12" fill="none" />
+        <circle id="arc" cx="60" cy="60" r="52" stroke="url(#grad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.72 326.72" stroke-dashoffset="326.72" fill="none" />
+      </svg>
+      <div class="value"><span id="val">85</span><span>/100</span></div>
+    </div>
+
+    <!-- barre horizontale -->
+    <div class="bar-wrap">
+      <div class="bar" id="bar"></div>
+    </div>
+    <div class="bar-labels"><span>Faible</span><span>Moyen</span><span>Élevé</span></div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="k">Score</div><div class="v" id="k-score">85/100</div></div>
+      <div class="kpi"><div class="k">Objectif</div><div class="v" id="k-goal">90/100</div></div>
+      <div class="kpi"><div class="k">Statut</div><div class="v" id="k-status">▶️ Reste 5 pts</div></div>
+    </div>
+
+    <div class="footer">
+      <div class="badge">Mise à jour — <span id="date"></span></div>
+      <div class="subtitle">Fajini • Copilote santé</div>
+    </div>
+  </div>
+
+  <script>
+    const score = 85;
+    const goal = 90;
+    const circ = 326.72;
+    const arc = document.getElementById('arc');
+    requestAnimationFrame(() => {
+      const offset = circ * (1 - score / 100);
+      arc.style.transition = 'stroke-dashoffset 900ms ease';
+      arc.setAttribute('stroke-dashoffset', offset);
+    });
+
+    // Barre horizontale
+    const bar = document.getElementById('bar');
+    bar.style.width = score + '%';
+
+    // Dot color
+    document.querySelector('.dot').style.background = 'var(--ok)';
+
+    // Footer date
+    document.getElementById('date').textContent = new Date().toLocaleDateString(undefined,{year:'numeric', month:'short', day:'2-digit'});
+  </script>
+</body>
+</html>
